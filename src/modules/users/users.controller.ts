@@ -1,12 +1,8 @@
-import {
-  Body,
-  Controller,
-  HttpStatus,
-  Post,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import UsersService from './users.service';
 import { UsersRegisterReqDto } from './dto/users-register.req.dto';
+import SETTINGS from '../../lib/constants/settings';
+import { UsersLoginReqDto } from './dto/users-login.req.dto';
 
 @Controller('users')
 export class UsersController {
@@ -14,13 +10,17 @@ export class UsersController {
 
   @Post('/register')
   async register(
-    @Body(
-      new ValidationPipe({
-        errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      }),
-    )
+    @Body(SETTINGS.VALIDATION_PIPE)
     body: UsersRegisterReqDto,
   ) {
     return await this.usersService.register(body);
+  }
+
+  @Post('/login')
+  async login(
+    @Body(SETTINGS.VALIDATION_PIPE)
+    body: UsersLoginReqDto,
+  ) {
+    return await this.usersService.login(body);
   }
 }
