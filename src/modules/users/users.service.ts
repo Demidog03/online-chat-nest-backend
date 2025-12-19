@@ -8,13 +8,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './users.entity';
 import { Repository } from 'typeorm';
 import { UsersLoginReqDto } from './dto/users-login.req.dto';
+import { JwtService } from '@nestjs/jwt';
 import MESSAGES from '../../lib/constants/messages';
+import { UsersProfileResponseDto } from './dto/users-profile.res.dto';
 
 @Injectable()
 class UsersService {
   constructor(
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
+    private jwtService: JwtService,
   ) {}
 
   async register(body: UsersRegisterReqDto) {
@@ -32,7 +35,11 @@ class UsersService {
       password: body.password,
     });
 
-    return await this.usersRepository.save(newUser);
+    const createdUser = await this.usersRepository.save(newUser);
+
+    const { id, name, email } = createdUser;
+
+    return { id, name, email };
 
     // INSERT INTO users (name, email, hash(password)) VALUES ('', '', '');
   }
@@ -52,14 +59,40 @@ class UsersService {
       throw new UnauthorizedException(MESSAGES.INVALID_EMAIL_OR_PASSWORD);
     }
 
+    const payload = { sub: user.id };
+    const accessToken = this.jwtService.sign(payload);
+    // const refreshToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+    };
+
+    // JWT Tokens - accessToken, refreshToken
+
+    // AUTHENTICATION
+    // AUTHORIZATION
+  }
+
+  async findById(id: number): Promise<Users | null> {
+    // SELECT * from USERS where id = 1231
+    return await this.usersRepository.findOne({
+      where: { id },
+    });
+  }
+
+  async getProfile(id: number): Promise<UsersProfileResponseDto | null> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
     };
-
-    // AUTHENTICATION
-    // AUTHORIZATION
   }
 }
 
