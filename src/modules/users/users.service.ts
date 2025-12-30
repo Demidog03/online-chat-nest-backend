@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersRegisterReqDto } from './dto/users-register.req.dto';
@@ -11,6 +12,8 @@ import { UsersLoginReqDto } from './dto/users-login.req.dto';
 import { JwtService } from '@nestjs/jwt';
 import MESSAGES from '../../lib/constants/messages';
 import { UsersProfileResponseDto } from './dto/users-profile.res.dto';
+import { UsersUpdateProfileRequestDto } from './dto/users-updateProfile.req.dto';
+import { UsersUpdateProfileResponseDto } from './dto/users-updateProfile.res.dto';
 
 @Injectable()
 class UsersService {
@@ -85,13 +88,35 @@ class UsersService {
       where: { id },
     });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     return {
       id: user.id,
       name: user.name,
       email: user.email,
+    };
+  }
+
+  async updateProfile(
+    id: number,
+    body: UsersUpdateProfileRequestDto,
+  ): Promise<UsersUpdateProfileResponseDto | null> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (body.name.trim()) {
+      user.name = body.name.trim();
+    }
+
+    await this.usersRepository.save(user);
+
+    return {
+      message: 'Profile updated successfully',
     };
   }
 }
